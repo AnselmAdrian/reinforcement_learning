@@ -1,0 +1,11 @@
+venv/
+*.pyc
+*.ipynb
+*.csv
+*.bat
+*.h5
+*.pkl
+*.html
+.vscode
+logs/*
+!logs/.gitkeep
