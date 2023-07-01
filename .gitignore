@@ -1,6 +1,6 @@
 venv/
 *.pyc
-*.ipynb
+#*.ipynb
 *.csv
 *.bat
 *.h5
