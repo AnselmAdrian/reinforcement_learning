@@ -130,6 +130,26 @@ class GridworldEnv(discrete.DiscreteEnv):
         else:
             ax.set(title="State Values".format(k))
         plt.show()
+    def policy_print(self, V, pi):
+        policy_arr = []
+        for action_prob in pi:
+            up = ' ' if action_prob[0] == 0 else '↑'
+            right = ' ' if action_prob[1] == 0 else '→'
+            down = ' ' if action_prob[2] == 0 else '↓'
+            left = ' ' if action_prob[3] == 0 else '←'
+            action_annot = f'{up}\n{left}   {right}\n{down}'
+            policy_arr.append(action_annot)
+        policy_arr = np.array(policy_arr).reshape(self.shape)
+
+        heatmap_params = dict(square=True, cbar=False, cmap='RdYlGn',
+                        xticklabels=False, yticklabels=False)
+        ax = sns.heatmap(V.reshape(self.shape),
+                        annot=policy_arr, annot_kws={'va':'center'}, 
+                        fmt="", **heatmap_params)
+        ax = sns.heatmap(V.reshape(self.shape),
+                        annot=True, 
+                        **heatmap_params, ax = ax)
+        plt.show()
 
 class Video_callback:
     heatmap_params = dict(colorscale = 'RdYlGn',
