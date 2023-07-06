@@ -27,7 +27,7 @@ class GridworldEnv(discrete.DiscreteEnv):
 
     metadata = {'render.modes': ['human', 'ansi']}
 
-    def __init__(self, size = (4,4), rewards = None, terminal_states = None, transition_cost = 1):
+    def __init__(self, size = (4,4), rewards = None, terminal_states = None, transition_cost = 1, action_probs = [1,0,0,0]):
         self.shape = size
         self.nS = np.prod(self.shape)
         self.nA = 4
@@ -40,15 +40,37 @@ class GridworldEnv(discrete.DiscreteEnv):
         if terminal_states is None:
             terminal_states = [0, self.nS - 1]
         self.terminal_states = terminal_states
-
+        self.action_probs = action_probs
+        
         P = {}
         for s in range(self.nS):
             position = np.unravel_index(s, self.shape)
             P[s] = {a: [] for a in range(self.nA)}
-            P[s][UP] = self._transition_prob(position, [-1, 0])
-            P[s][RIGHT] = self._transition_prob(position, [0, 1])
-            P[s][DOWN] = self._transition_prob(position, [1, 0])
-            P[s][LEFT] = self._transition_prob(position, [0, -1])
+
+            P[s][UP] = [
+                        self._transition_prob(position, [-1, 0], action_probs[0]), # Up
+                        self._transition_prob(position, [0, 1], action_probs[1]), # Right
+                        self._transition_prob(position, [0, -1], action_probs[3]), # Left
+                        self._transition_prob(position, [1, 0], action_probs[2]), # Down
+                        ]
+            P[s][RIGHT] = [
+                        self._transition_prob(position, [0, 1], action_probs[0]), # Right
+                        self._transition_prob(position, [1, 0], action_probs[1]), # Down
+                        self._transition_prob(position, [-1, 0], action_probs[2]), # Up
+                        self._transition_prob(position, [0, -1], action_probs[3]), # Left
+                        ]
+            P[s][DOWN] = [
+                        self._transition_prob(position, [1, 0], action_probs[0]), # Down
+                        self._transition_prob(position, [0, -1], action_probs[1]), # Left
+                        self._transition_prob(position, [0, 1], action_probs[2]), # Right
+                        self._transition_prob(position, [-1, 0], action_probs[3]), # Up
+                        ]
+            P[s][LEFT] = [
+                        self._transition_prob(position, [0, -1], action_probs[0]), # Left
+                        self._transition_prob(position, [-1, 0], action_probs[1]), # Up
+                        self._transition_prob(position, [1, 0], action_probs[2]), # Down
+                        self._transition_prob(position, [0, 1], action_probs[3]), # Right
+                        ]
 
         # Initial state distribution is uniform
         isd = np.ones(self.nS) / self.nS
@@ -71,7 +93,7 @@ class GridworldEnv(discrete.DiscreteEnv):
         coord[1] = max(coord[1], 0)
         return coord
 
-    def _transition_prob(self, current, delta):
+    def _transition_prob(self, current, delta, probs = 1.0):
         """
         Model Transitions. Prob is always 1.0.
         :param current: Current position on the grid as (row, col)
@@ -82,14 +104,14 @@ class GridworldEnv(discrete.DiscreteEnv):
         # if stuck in terminal state
         current_state = np.ravel_multi_index(tuple(current), self.shape)
         if current_state in self.terminal_states:
-            return [(1.0, current_state, self.rewards[current_state], True)]\
+            return (0.25, current_state, self.rewards[current_state], True)
 
         new_position = np.array(current) + np.array(delta)
         new_position = self._limit_coordinates(new_position).astype(int)
         new_state = np.ravel_multi_index(tuple(new_position), self.shape)
 
-        is_done = new_state in self.terminal_states
-        return [(1.0, new_state, self.rewards[new_state] - self.transition_cost, is_done)]
+        # is_done = new_state in self.terminal_states
+        return (probs, new_state, self.rewards[current_state] - self.transition_cost, False)
 
     def render(self, mode='human'):
         outfile = StringIO() if mode == 'ansi' else sys.stdout
@@ -119,18 +141,20 @@ class GridworldEnv(discrete.DiscreteEnv):
                 return outfile.getvalue()
             
     # Custom print to show state values inside the grid
-    def grid_print(self, V, k=None):
+    def grid_print(self, V, k=None, figsize=(10,10)):
+        fig, ax = plt.subplots(figsize=figsize)  
         ax = sns.heatmap(V.reshape(self.shape),
                         annot=True, square=True,
                         cbar=False, cmap='RdYlGn',
-                        xticklabels=False, yticklabels=False)
+                        xticklabels=False, yticklabels=False, ax = ax)
 
         if k:
             ax.set(title="State values after K = {0}".format(k))
         else:
             ax.set(title="State Values".format(k))
         plt.show()
-    def policy_print(self, V, pi):
+    def policy_print(self, V, pi, figsize=(10,10)):
+        fig, ax = plt.subplots(figsize=figsize)  
         policy_arr = []
         for action_prob in pi:
             up = ' ' if action_prob[0] == 0 else '↑'
@@ -145,10 +169,10 @@ class GridworldEnv(discrete.DiscreteEnv):
                         xticklabels=False, yticklabels=False)
         ax = sns.heatmap(V.reshape(self.shape),
                         annot=policy_arr, annot_kws={'va':'center'}, 
-                        fmt="", **heatmap_params)
-        ax = sns.heatmap(V.reshape(self.shape),
-                        annot=True, 
-                        **heatmap_params, ax = ax)
+                        fmt="", **heatmap_params, ax = ax)
+        # ax = sns.heatmap(V.reshape(self.shape),
+        #                 annot=True, 
+        #                 **heatmap_params, ax = ax)
         plt.show()
 
 class Video_callback:
@@ -158,7 +182,7 @@ class Video_callback:
                             showscale=False,
                             )
     
-    def __init__(self, shape, value_range = None,):
+    def __init__(self, shape, value_range = None):
         
         self.frames = []
         self.titles = []
