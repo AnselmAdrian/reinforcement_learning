@@ -10,4 +10,5 @@ ipykernel
 optuna
 gym==0.21
 nbformat
+pyglet==1.5.27
 # poke-env
