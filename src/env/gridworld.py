@@ -196,6 +196,20 @@ class Video_callback:
         self.frames.append(np.flip(V.reshape(self.shape), axis = 0))
         self.titles.append(k)
 
+    @classmethod
+    def render_frame(self, data):
+        fig = go.Figure(go.Heatmap(z=data, **self.heatmap_params))
+    
+        fig.update_traces(showlegend=False)
+        fig.update(layout_showlegend=False)
+        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)')
+        
+        fig.update_xaxes(visible=False)
+        fig.update_yaxes(visible=False)
+        fig['layout']['yaxis']['scaleanchor']='x'
+        
+        return fig
+
     def plot(self):
         fig_dict = {
             "data": [],
