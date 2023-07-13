@@ -2,6 +2,10 @@ venv/
 *.pyc
 #*.ipynb
 *.csv
+*.png
+*.jpg
+*.jpeg
+*.gif
 *.bat
 *.h5
 *.pkl

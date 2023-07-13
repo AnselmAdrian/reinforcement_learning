@@ -1,10 +1,13 @@
 pandas
 numpy
 plotly
+seaborn
 matplotlib
 stable-baselines3
 statsmodels
 scikit-learn
 ipykernel
 optuna
-poke-env
+gym==0.21
+nbformat
+# poke-env
